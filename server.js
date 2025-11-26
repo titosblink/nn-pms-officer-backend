@@ -131,7 +131,7 @@ app.post("/api/register", upload.single("passport"), async (req, res) => {
 // Auth Route (Fix for “Cannot GET /auth”)
 // -----------------------
 app.get("/auth", (req, res) => {
-  res.send("Auth route is working!");
+  res.send("Auth route is working now!");
 });
 
 // -----------------------
