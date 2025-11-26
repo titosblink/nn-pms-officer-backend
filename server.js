@@ -25,12 +25,13 @@ app.get("/", (req, res) => {
 // -----------------------
 // MongoDB connection
 // -----------------------
-mongoose.connect(process.env.MONGO_URI, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true
-})
+mongoose
+  .connect(process.env.MONGO_URI, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true
+  })
   .then(() => console.log("MongoDB connected"))
-  .catch(err => console.error("MongoDB connection error:", err));
+  .catch((err) => console.error("MongoDB connection error:", err));
 
 // -----------------------
 // Cloudinary configuration
@@ -54,31 +55,53 @@ const storage = new CloudinaryStorage({
 const upload = multer({ storage });
 
 // -----------------------
-// Officer model
+// Officer Model
 // -----------------------
-const officerSchema = new mongoose.Schema({
-  surname: { type: String, required: true },
-  firstname: { type: String, required: true },
-  othername: { type: String },
-  gender: { type: String, required: true },
-  religion: { type: String },
-  serviceNumber: { type: String, required: true },
-  state: { type: String, required: true },
-  lga: { type: String, required: true },
-  passportUrl: { type: String, required: true }
-}, { timestamps: true });
+const officerSchema = new mongoose.Schema(
+  {
+    surname: { type: String, required: true },
+    firstname: { type: String, required: true },
+    othername: { type: String },
+    gender: { type: String, required: true },
+    religion: { type: String },
+    serviceNumber: { type: String, required: true },
+    state: { type: String, required: true },
+    lga: { type: String, required: true },
+    passportUrl: { type: String, required: true }
+  },
+  { timestamps: true }
+);
 
 const Officer = mongoose.model("Officer", officerSchema);
 
 // -----------------------
-// Officer registration
+// Officer Registration Route
 // -----------------------
 app.post("/api/register", upload.single("passport"), async (req, res) => {
   try {
-    const { surname, firstname, othername, gender, religion, serviceNumber, state, lga } = req.body;
+    const {
+      surname,
+      firstname,
+      othername,
+      gender,
+      religion,
+      serviceNumber,
+      state,
+      lga
+    } = req.body;
 
-    if (!surname || !firstname || !gender || !serviceNumber || !state || !lga || !req.file) {
-      return res.status(400).json({ message: "Please fill all required fields." });
+    if (
+      !surname ||
+      !firstname ||
+      !gender ||
+      !serviceNumber ||
+      !state ||
+      !lga ||
+      !req.file
+    ) {
+      return res
+        .status(400)
+        .json({ message: "Please fill all required fields." });
     }
 
     const newOfficer = new Officer({
@@ -94,21 +117,25 @@ app.post("/api/register", upload.single("passport"), async (req, res) => {
     });
 
     const savedOfficer = await newOfficer.save();
-    res.status(201).json({ message: "Officer saved successfully", data: savedOfficer });
+
+    res
+      .status(201)
+      .json({ message: "Officer saved successfully", data: savedOfficer });
   } catch (err) {
-    console.error("Register officer error:", err);
+    console.error("Register Officer Error:", err);
     res.status(500).json({ message: "Server error" });
   }
 });
 
 // -----------------------
-// Auth routes
+// Auth Route (Fix for “Cannot GET /auth”)
 // -----------------------
-const authRoutes = require("./routes/auth"); // make sure routes/auth.js exists
-app.use("/auth", authRoutes);
+app.get("/auth", (req, res) => {
+  res.send("Auth route is working!");
+});
 
 // -----------------------
-// Start server
+// Start Server
 // -----------------------
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
