@@ -1,7 +1,7 @@
 const express = require("express");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
-const User = require("../models/User"); // make sure User model exists
+const User = require("../models/User"); // Make sure User model exists
 const router = express.Router();
 
 // ----------------------
@@ -16,8 +16,7 @@ router.post("/signup", async (req, res) => {
     }
 
     const existingUser = await User.findOne({ email });
-    if (existingUser)
-      return res.status(409).json({ message: "Email already taken" });
+    if (existingUser) return res.status(409).json({ message: "Email already taken" });
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
@@ -25,14 +24,13 @@ router.post("/signup", async (req, res) => {
       name,
       email,
       password: hashedPassword,
-      status
+      status,
     });
 
     res.status(201).json({
       message: "User created successfully",
-      user: { id: newUser._id, name, email, status }
+      user: { id: newUser._id, name, email, status },
     });
-
   } catch (err) {
     console.error("Signup error:", err);
     res.status(500).json({ message: "Server error" });
@@ -46,35 +44,26 @@ router.post("/login", async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    if (!email || !password)
-      return res.status(400).json({ message: "Email and password required" });
+    if (!email || !password) return res.status(400).json({ message: "Email and password required" });
 
     const user = await User.findOne({ email });
-    if (!user)
-      return res.status(400).json({ message: "Invalid credentials" });
+    if (!user) return res.status(400).json({ message: "Invalid credentials" });
 
     const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch)
-      return res.status(400).json({ message: "Invalid credentials" });
+    if (!isMatch) return res.status(400).json({ message: "Invalid credentials" });
 
-    // Ensure JWT_SECRET is set
     if (!process.env.JWT_SECRET) {
       console.error("JWT_SECRET is not set in environment variables");
       return res.status(500).json({ message: "Server configuration error" });
     }
 
-    const token = jwt.sign(
-      { id: user._id, status: user.status },
-      process.env.JWT_SECRET,
-      { expiresIn: "1d" }
-    );
+    const token = jwt.sign({ id: user._id, status: user.status }, process.env.JWT_SECRET, { expiresIn: "1d" });
 
     res.status(200).json({
       message: "Login successful",
       token,
-      user: { id: user._id, name: user.name, email: user.email, status: user.status }
+      user: { id: user._id, name: user.name, email: user.email, status: user.status },
     });
-
   } catch (err) {
     console.error("Login error:", err);
     res.status(500).json({ message: "Server error" });

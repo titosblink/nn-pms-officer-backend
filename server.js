@@ -7,13 +7,24 @@ const multer = require("multer");
 const cloudinary = require("cloudinary").v2;
 const { CloudinaryStorage } = require("multer-storage-cloudinary");
 
+const authRoutes = require("./routes/auth"); // Import auth routes
+
 const app = express();
 
 // -----------------------
 // Middleware
 // -----------------------
-app.use(cors());
 app.use(express.json());
+
+// -----------------------
+// CORS configuration for frontend
+// -----------------------
+app.use(
+  cors({
+    origin: "*", // Replace "*" with your frontend URL in production
+    credentials: true,
+  })
+);
 
 // -----------------------
 // Root route for testing
@@ -28,7 +39,7 @@ app.get("/", (req, res) => {
 mongoose
   .connect(process.env.MONGO_URI, {
     useNewUrlParser: true,
-    useUnifiedTopology: true
+    useUnifiedTopology: true,
   })
   .then(() => console.log("MongoDB connected"))
   .catch((err) => console.error("MongoDB connection error:", err));
@@ -39,7 +50,7 @@ mongoose
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
   api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET
+  api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
 // -----------------------
@@ -49,8 +60,8 @@ const storage = new CloudinaryStorage({
   cloudinary,
   params: {
     folder: "passports",
-    allowed_formats: ["jpg", "png", "jpeg"]
-  }
+    allowed_formats: ["jpg", "png", "jpeg"],
+  },
 });
 const upload = multer({ storage });
 
@@ -67,7 +78,7 @@ const officerSchema = new mongoose.Schema(
     serviceNumber: { type: String, required: true },
     state: { type: String, required: true },
     lga: { type: String, required: true },
-    passportUrl: { type: String, required: true }
+    passportUrl: { type: String, required: true },
   },
   { timestamps: true }
 );
@@ -79,29 +90,10 @@ const Officer = mongoose.model("Officer", officerSchema);
 // -----------------------
 app.post("/api/register", upload.single("passport"), async (req, res) => {
   try {
-    const {
-      surname,
-      firstname,
-      othername,
-      gender,
-      religion,
-      serviceNumber,
-      state,
-      lga
-    } = req.body;
+    const { surname, firstname, othername, gender, religion, serviceNumber, state, lga } = req.body;
 
-    if (
-      !surname ||
-      !firstname ||
-      !gender ||
-      !serviceNumber ||
-      !state ||
-      !lga ||
-      !req.file
-    ) {
-      return res
-        .status(400)
-        .json({ message: "Please fill all required fields." });
+    if (!surname || !firstname || !gender || !serviceNumber || !state || !lga || !req.file) {
+      return res.status(400).json({ message: "Please fill all required fields." });
     }
 
     const newOfficer = new Officer({
@@ -113,14 +105,12 @@ app.post("/api/register", upload.single("passport"), async (req, res) => {
       serviceNumber,
       state,
       lga,
-      passportUrl: req.file.path
+      passportUrl: req.file.path,
     });
 
     const savedOfficer = await newOfficer.save();
 
-    res
-      .status(201)
-      .json({ message: "Officer saved successfully", data: savedOfficer });
+    res.status(201).json({ message: "Officer saved successfully", data: savedOfficer });
   } catch (err) {
     console.error("Register Officer Error:", err);
     res.status(500).json({ message: "Server error" });
@@ -128,11 +118,9 @@ app.post("/api/register", upload.single("passport"), async (req, res) => {
 });
 
 // -----------------------
-// Auth Route (Fix for “Cannot GET /auth”)
+// Auth routes
 // -----------------------
-app.get("/auth", (req, res) => {
-  res.send("Auth route is working!");
-});
+app.use("/auth", authRoutes);
 
 // -----------------------
 // Start Server
