@@ -11,12 +11,13 @@ router.post("/signup", async (req, res) => {
   try {
     const { name, email, password, status } = req.body;
 
-    if (!name || !email || !password || !status)
+    if (!name || !email || !password || !status) {
       return res.status(400).json({ message: "All fields are required" });
+    }
 
     const existingUser = await User.findOne({ email });
     if (existingUser)
-      return res.status(400).json({ message: "Email already taken" });
+      return res.status(409).json({ message: "Email already taken" });
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
@@ -33,7 +34,8 @@ router.post("/signup", async (req, res) => {
     });
 
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
   }
 });
 
@@ -48,13 +50,19 @@ router.post("/login", async (req, res) => {
       return res.status(400).json({ message: "Email and password required" });
 
     const user = await User.findOne({ email });
-    if (!user) return res.status(400).json({ message: "Invalid credentials" });
+    if (!user)
+      return res.status(400).json({ message: "Invalid credentials" });
 
     const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) return res.status(400).json({ message: "Invalid credentials" });
+    if (!isMatch)
+      return res.status(400).json({ message: "Invalid credentials" });
+
+    if (!process.env.JWT_SECRET) {
+      throw new Error("JWT_SECRET not configured");
+    }
 
     const token = jwt.sign(
-      { id: user._id, email: user.email, status: user.status },
+      { id: user._id, status: user.status },  
       process.env.JWT_SECRET,
       { expiresIn: "1d" }
     );
@@ -66,7 +74,8 @@ router.post("/login", async (req, res) => {
     });
 
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
   }
 });
 
