@@ -19,7 +19,7 @@ app.use(express.json());
 // Root route for testing
 // -----------------------
 app.get("/", (req, res) => {
-  res.send("NN PMS Officers API is running!");
+  res.send("NN PMS Officers API is running! now");
 });
 
 // -----------------------
