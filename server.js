@@ -120,8 +120,9 @@ app.post("/api/register", upload.single("passport"), async (req, res) => {
 // -----------------------
 // Auth routes
 // -----------------------
+// app.use("/auth", authRoutes);
+const authRoutes = require("./routes/auth");
 app.use("/auth", authRoutes);
-// app.use("/api/auth", authRoutes);
 // -----------------------
 // Start Server
 // -----------------------
