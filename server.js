@@ -19,7 +19,7 @@ app.use(express.json());
 // Root route for testing
 // -----------------------
 app.get("/", (req, res) => {
-  res.send("NN PMS Officers API is running! now .");
+  res.send("Root API is running!");
 });
 
 // -----------------------
@@ -131,7 +131,7 @@ app.post("/api/register", upload.single("passport"), async (req, res) => {
 // Auth Route (Fix for “Cannot GET /auth”)
 // -----------------------
 app.get("/auth", (req, res) => {
-  res.send("Auth route is working now!");
+  res.send("Auth route is working!");
 });
 
 // -----------------------
