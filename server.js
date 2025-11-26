@@ -9,16 +9,22 @@ const { CloudinaryStorage } = require("multer-storage-cloudinary");
 
 const app = express();
 
+// -----------------------
 // Middleware
+// -----------------------
 app.use(cors());
 app.use(express.json());
 
+// -----------------------
 // Root route for testing
+// -----------------------
 app.get("/", (req, res) => {
   res.send("NN PMS Officers API is running!");
 });
 
+// -----------------------
 // MongoDB connection
+// -----------------------
 mongoose.connect(process.env.MONGO_URI, {
   useNewUrlParser: true,
   useUnifiedTopology: true
@@ -26,14 +32,18 @@ mongoose.connect(process.env.MONGO_URI, {
   .then(() => console.log("MongoDB connected"))
   .catch(err => console.error("MongoDB connection error:", err));
 
-// Configure Cloudinary
+// -----------------------
+// Cloudinary configuration
+// -----------------------
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
   api_key: process.env.CLOUDINARY_API_KEY,
   api_secret: process.env.CLOUDINARY_API_SECRET
 });
 
-// Configure Multer-Cloudinary storage
+// -----------------------
+// Multer + Cloudinary storage
+// -----------------------
 const storage = new CloudinaryStorage({
   cloudinary,
   params: {
@@ -43,7 +53,9 @@ const storage = new CloudinaryStorage({
 });
 const upload = multer({ storage });
 
-// Officer Schema
+// -----------------------
+// Officer model
+// -----------------------
 const officerSchema = new mongoose.Schema({
   surname: { type: String, required: true },
   firstname: { type: String, required: true },
@@ -58,7 +70,9 @@ const officerSchema = new mongoose.Schema({
 
 const Officer = mongoose.model("Officer", officerSchema);
 
-// Register officer
+// -----------------------
+// Officer registration
+// -----------------------
 app.post("/api/register", upload.single("passport"), async (req, res) => {
   try {
     const { surname, firstname, othername, gender, religion, serviceNumber, state, lga } = req.body;
@@ -82,16 +96,19 @@ app.post("/api/register", upload.single("passport"), async (req, res) => {
     const savedOfficer = await newOfficer.save();
     res.status(201).json({ message: "Officer saved successfully", data: savedOfficer });
   } catch (err) {
-    console.error(err);
+    console.error("Register officer error:", err);
     res.status(500).json({ message: "Server error" });
   }
 });
 
-// Placeholder Auth route (create routes/auth.js separately if needed)
-app.use("/auth", (req, res) => {
-  res.send("Auth routes placeholder");
-});
+// -----------------------
+// Auth routes
+// -----------------------
+const authRoutes = require("./routes/auth"); // make sure routes/auth.js exists
+app.use("/auth", authRoutes);
 
+// -----------------------
 // Start server
+// -----------------------
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));

@@ -1,7 +1,7 @@
 const express = require("express");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
-const User = require("../models/User");
+const User = require("../models/User"); // make sure User model exists
 const router = express.Router();
 
 // ----------------------
@@ -34,7 +34,7 @@ router.post("/signup", async (req, res) => {
     });
 
   } catch (err) {
-    console.error(err);
+    console.error("Signup error:", err);
     res.status(500).json({ message: "Server error" });
   }
 });
@@ -57,12 +57,14 @@ router.post("/login", async (req, res) => {
     if (!isMatch)
       return res.status(400).json({ message: "Invalid credentials" });
 
+    // Ensure JWT_SECRET is set
     if (!process.env.JWT_SECRET) {
-      throw new Error("JWT_SECRET not configured");
+      console.error("JWT_SECRET is not set in environment variables");
+      return res.status(500).json({ message: "Server configuration error" });
     }
 
     const token = jwt.sign(
-      { id: user._id, status: user.status },  
+      { id: user._id, status: user.status },
       process.env.JWT_SECRET,
       { expiresIn: "1d" }
     );
@@ -74,7 +76,7 @@ router.post("/login", async (req, res) => {
     });
 
   } catch (err) {
-    console.error(err);
+    console.error("Login error:", err);
     res.status(500).json({ message: "Server error" });
   }
 });
