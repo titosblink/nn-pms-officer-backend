@@ -13,15 +13,18 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// ⭐ ADD THIS ⭐
-const authRoutes = require("./routes/auth");
-app.use("/auth", authRoutes);
-// ⭐ END ADD ⭐
+// Root route for testing
+app.get("/", (req, res) => {
+  res.send("NN PMS Officers API is running!");
+});
 
 // MongoDB connection
-mongoose.connect(process.env.MONGO_URI)
+mongoose.connect(process.env.MONGO_URI, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true
+})
   .then(() => console.log("MongoDB connected"))
-  .catch(err => console.error(err));
+  .catch(err => console.error("MongoDB connection error:", err));
 
 // Configure Cloudinary
 cloudinary.config({
@@ -38,10 +41,9 @@ const storage = new CloudinaryStorage({
     allowed_formats: ["jpg", "png", "jpeg"]
   }
 });
-
 const upload = multer({ storage });
 
-// Define Officer schema
+// Officer Schema
 const officerSchema = new mongoose.Schema({
   surname: { type: String, required: true },
   firstname: { type: String, required: true },
@@ -85,5 +87,11 @@ app.post("/api/register", upload.single("passport"), async (req, res) => {
   }
 });
 
+// Placeholder Auth route (create routes/auth.js separately if needed)
+app.use("/auth", (req, res) => {
+  res.send("Auth routes placeholder");
+});
+
+// Start server
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
