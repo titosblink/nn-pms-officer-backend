@@ -1,51 +1,43 @@
 const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
+const path = require("path");
 require("dotenv").config();
 
 const multer = require("multer");
 const cloudinary = require("cloudinary").v2;
 const { CloudinaryStorage } = require("multer-storage-cloudinary");
 
-const authRoutes = require("./routes/auth"); // Import auth routes
-
+// -----------------------
+// App initialization (FIRST)
+// -----------------------
 const app = express();
 
 // -----------------------
 // Middleware
 // -----------------------
 app.use(express.json());
+app.use(cors({ origin: "*", credentials: true }));
 
 // -----------------------
-// CORS configuration for frontend
+// Routes
 // -----------------------
-app.use(
-  cors({
-    origin: "*", // Replace "*" with your frontend URL in production
-    credentials: true,
-  })
-);
+const authRoutes = require("./routes/auth");
+// const userRoutes = require("./routes/users"); // uncomment if exists
+
+app.use("/auth", authRoutes);
+// app.use("/users", userRoutes);
 
 // -----------------------
-// Root route for testing
-// -----------------------
-app.get("/", (req, res) => {
-  res.send("Root API is running!");
-});
-
-// -----------------------
-// MongoDB connection
+// MongoDB
 // -----------------------
 mongoose
-  .connect(process.env.MONGO_URI, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-  })
+  .connect(process.env.MONGO_URI)
   .then(() => console.log("MongoDB connected"))
-  .catch((err) => console.error("MongoDB connection error:", err));
+  .catch(err => console.error(err));
 
 // -----------------------
-// Cloudinary configuration
+// Cloudinary
 // -----------------------
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
@@ -54,7 +46,7 @@ cloudinary.config({
 });
 
 // -----------------------
-// Multer + Cloudinary storage
+// Multer Storage
 // -----------------------
 const storage = new CloudinaryStorage({
   cloudinary,
@@ -63,68 +55,55 @@ const storage = new CloudinaryStorage({
     allowed_formats: ["jpg", "png", "jpeg"],
   },
 });
+
 const upload = multer({ storage });
 
 // -----------------------
 // Officer Model
 // -----------------------
-const officerSchema = new mongoose.Schema(
-  {
-    surname: { type: String, required: true },
-    firstname: { type: String, required: true },
-    othername: { type: String },
-    gender: { type: String, required: true },
-    religion: { type: String },
-    serviceNumber: { type: String, required: true },
-    state: { type: String, required: true },
-    lga: { type: String, required: true },
-    passportUrl: { type: String, required: true },
-  },
-  { timestamps: true }
-);
+const officerSchema = new mongoose.Schema({
+  surname: String,
+  firstname: String,
+  othername: String,
+  gender: String,
+  religion: String,
+  serviceNumber: String,
+  state: String,
+  lga: String,
+  passportUrl: String,
+}, { timestamps: true });
 
 const Officer = mongoose.model("Officer", officerSchema);
 
 // -----------------------
-// Officer Registration Route
+// Officer Registration
 // -----------------------
 app.post("/api/register", upload.single("passport"), async (req, res) => {
   try {
-    const { surname, firstname, othername, gender, religion, serviceNumber, state, lga } = req.body;
-
-    if (!surname || !firstname || !gender || !serviceNumber || !state || !lga || !req.file) {
-      return res.status(400).json({ message: "Please fill all required fields." });
-    }
-
-    const newOfficer = new Officer({
-      surname,
-      firstname,
-      othername,
-      gender,
-      religion,
-      serviceNumber,
-      state,
-      lga,
+    const officer = new Officer({
+      ...req.body,
       passportUrl: req.file.path,
     });
 
-    const savedOfficer = await newOfficer.save();
-
-    res.status(201).json({ message: "Officer saved successfully", data: savedOfficer });
+    await officer.save();
+    res.status(201).json({ message: "Officer saved successfully" });
   } catch (err) {
-    console.error("Register Officer Error:", err);
     res.status(500).json({ message: "Server error" });
   }
 });
 
 // -----------------------
-// Auth routes
+// Serve React frontend
 // -----------------------
-// app.use("/auth", authRoutes);
-// const authRoutes = require("./routes/auth");
-app.use("/auth", authRoutes);
+app.use(express.static(path.join(__dirname, "build")));
+
+// 🔑 React SPA fallback (THIS FIXES REFRESH 404)
+app.get("*", (req, res) => {
+  res.sendFile(path.join(__dirname, "build", "index.html"));
+});
+
 // -----------------------
-// Start Server
+// Start server (LAST)
 // -----------------------
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
