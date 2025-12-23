@@ -1,4 +1,3 @@
-// server.js
 const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
@@ -66,7 +65,7 @@ const officerSchema = new mongoose.Schema(
     lga: { type: String, required: true },
     passportUrl: { type: String, required: true },
     email: { type: String, unique: true, required: true },
-    password: { type: String, required: true }, // hashed password
+    password: { type: String, required: true }, // hashed
   },
   { timestamps: true }
 );
@@ -82,6 +81,9 @@ app.get("/", (req, res) => {
   res.send("Root API is running!");
 });
 
+// Ping route to test server
+app.get("/ping", (req, res) => res.send("pong"));
+
 // -----------------------
 // Officer Registration
 // -----------------------
@@ -93,7 +95,6 @@ app.post("/api/register", upload.single("passport"), async (req, res) => {
       return res.status(400).json({ message: "Please fill all required fields." });
     }
 
-    // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
     const newOfficer = new Officer({
@@ -111,7 +112,6 @@ app.post("/api/register", upload.single("passport"), async (req, res) => {
     });
 
     const savedOfficer = await newOfficer.save();
-
     res.status(201).json({ message: "Officer registered successfully", data: savedOfficer });
   } catch (err) {
     console.error("Registration error:", err);
@@ -126,8 +126,7 @@ app.post("/auth/login", async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    if (!email || !password)
-      return res.status(400).json({ message: "Email and password required" });
+    if (!email || !password) return res.status(400).json({ message: "Email and password required" });
 
     const officer = await Officer.findOne({ email });
     if (!officer) return res.status(404).json({ message: "Officer not found" });
@@ -135,9 +134,7 @@ app.post("/auth/login", async (req, res) => {
     const isMatch = await bcrypt.compare(password, officer.password);
     if (!isMatch) return res.status(401).json({ message: "Invalid password" });
 
-    // Generate JWT
     const token = jwt.sign({ id: officer._id }, process.env.JWT_SECRET, { expiresIn: "7d" });
-
     res.json({ message: "Login successful", token, user: officer });
   } catch (err) {
     console.error("Login error:", err);
@@ -149,11 +146,7 @@ app.post("/auth/login", async (req, res) => {
 // Serve React frontend
 // -----------------------
 app.use(express.static(path.join(__dirname, "build")));
-
-// React fallback (must be last)
-app.get("*", (req, res) => {
-  res.sendFile(path.join(__dirname, "build", "index.html"));
-});
+app.get("*", (req, res) => res.sendFile(path.join(__dirname, "build", "index.html")));
 
 // -----------------------
 // Start server
