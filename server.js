@@ -154,21 +154,16 @@ app.post("/auth/signup", async (req, res) => {
       return res.status(400).json({ message: "All fields are required" });
     }
 
-    const existingUser = await Officer.findOne({ email });
+    const existingUser = await User.findOne({ email });
     if (existingUser) return res.status(409).json({ message: "Email already taken" });
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    const newUser = new Officer({
-      surname: name,        // map 'name' to 'surname'
-      firstname: "",        // empty, since signup is simple
-      gender: "N/A",        // or leave as placeholder
-      serviceNumber: "N/A", // placeholder
-      state: "N/A",
-      lga: "N/A",
-      passportUrl: "",
+    const newUser = new User({
+      name,
       email,
       password: hashedPassword,
+      status
     });
 
     const savedUser = await newUser.save();
