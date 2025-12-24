@@ -15,34 +15,28 @@ const Officer = require("./models/Officer");
 const authRouter = require("./routes/auth");
 const officerRoutes = require("./routes/officers");
 
-// Initialize Express
+// Initialize app
 const app = express();
 
 // Middleware
 app.use(cors({ origin: "*", credentials: true }));
 app.use(express.json());
-app.use("/uploads", express.static(path.join(__dirname, "uploads"))); // serve local uploads if any
+app.use("/uploads", express.static(path.join(__dirname, "uploads"))); // serve uploaded files
 
-// -----------------------
 // MongoDB connection
-// -----------------------
 mongoose
-  .connect(process.env.MONGO_URI)
+  .connect(process.env.MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true })
   .then(() => console.log("MongoDB connected"))
   .catch((err) => console.error("MongoDB connection error:", err));
 
-// -----------------------
 // Cloudinary configuration
-// -----------------------
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
   api_key: process.env.CLOUDINARY_API_KEY,
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-// -----------------------
 // Multer + Cloudinary storage
-// -----------------------
 const storage = new CloudinaryStorage({
   cloudinary,
   params: {
@@ -53,12 +47,16 @@ const storage = new CloudinaryStorage({
 const upload = multer({ storage });
 
 // -----------------------
-// API Routes
+// Routes
 // -----------------------
-app.use("/auth", authRouter);        // Authentication routes
-app.use("/api", officerRoutes);      // Officer CRUD routes
 
-// Officer registration (standalone example)
+// Auth routes
+app.use("/auth", authRouter);
+
+// Officer routes
+app.use("/api", officerRoutes);
+
+// Officer registration (example route)
 app.post("/api/register", upload.single("passport"), async (req, res) => {
   try {
     const { surname, firstname, othername, gender, religion, serviceNumber, state, lga, email, password } = req.body;
@@ -81,7 +79,7 @@ app.post("/api/register", upload.single("passport"), async (req, res) => {
       serviceNumber,
       state,
       lga,
-      passportUrl: req.file.path || req.file.secure_url, // Cloudinary URL
+      passportUrl: req.file.path,
       email,
       password: hashedPassword,
     });
@@ -94,21 +92,14 @@ app.post("/api/register", upload.single("passport"), async (req, res) => {
   }
 });
 
-// -----------------------
 // Test route
-// -----------------------
-app.get("/ping", (req, res) => res.send("pong"));
 app.get("/", (req, res) => res.send("Root API is running!"));
 
-// -----------------------
 // Serve React frontend
-// -----------------------
-const clientBuildPath = path.join(__dirname, "client", "build");
+const clientBuildPath = path.join(__dirname, "build");
 app.use(express.static(clientBuildPath));
-app.get("*", (req, res) => res.sendFile(path.join(clientBuildPath, "index.html")));
+app.get(/.*/, (req, res) => res.sendFile(path.join(clientBuildPath, "index.html")));
 
-// -----------------------
 // Start server
-// -----------------------
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
