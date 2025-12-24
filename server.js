@@ -153,7 +153,8 @@ const clientBuildPath = path.join(__dirname, "build"); // Adjust if your React b
 app.use(express.static(clientBuildPath));
 
 // Catch-all route (after all API routes)
-app.get("*", (req, res) => {
+
+app.get(/.*/, (req,res) => {
   res.sendFile(path.join(clientBuildPath, "index.html"));
 });
 
