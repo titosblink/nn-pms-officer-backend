@@ -9,9 +9,6 @@ const MongoStore = require("connect-mongo");
 const authRouter = require("./routes/auth");
 const officerRouter = require("./routes/officer");
 
-const officerRouter = require("./routes/officer"); 
-
-
 const app = express();
 app.use("/api/officer", officerRouter);
 
