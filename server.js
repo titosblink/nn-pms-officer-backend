@@ -19,13 +19,17 @@ app.use(express.json());
 app.use(
   session({
     name: "nn_pms_session",
-    secret: process.env.SESSION_SECRET || "supersecretkey",
+    secret: process.env.SESSION_SECRET,
     resave: false,
     saveUninitialized: false,
-    store: MongoStore.create({ mongoUrl: process.env.MONGO_URI }),
+    store: MongoStore.create({
+      mongoUrl: process.env.MONGO_URI,
+      collectionName: "sessions",
+    }),
     cookie: {
+      secure: false, // set true only if HTTPS
       httpOnly: true,
-      maxAge: 24 * 60 * 60 * 1000, // 1 day
+      maxAge: 1000 * 60 * 60 * 24, // 1 day
     },
   })
 );
