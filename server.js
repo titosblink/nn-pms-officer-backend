@@ -150,24 +150,25 @@ app.post("/auth/signup", async (req, res) => {
   try {
     const { name, email, password, status } = req.body;
 
-    // Validate required fields
     if (!name || !email || !password || !status) {
       return res.status(400).json({ message: "All fields are required" });
     }
 
-    // Check if user already exists
     const existingUser = await Officer.findOne({ email });
     if (existingUser) return res.status(409).json({ message: "Email already taken" });
 
-    // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Create new user
     const newUser = new Officer({
-      name,  // Or create a separate 'name' field if you prefer
+      surname: name,        // map 'name' to 'surname'
+      firstname: "",        // empty, since signup is simple
+      gender: "N/A",        // or leave as placeholder
+      serviceNumber: "N/A", // placeholder
+      state: "N/A",
+      lga: "N/A",
+      passportUrl: "",
       email,
       password: hashedPassword,
-      status,
     });
 
     const savedUser = await newUser.save();
@@ -177,6 +178,7 @@ app.post("/auth/signup", async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 });
+
 
 // -----------------------
 // Serve React frontend
