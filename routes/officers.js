@@ -1,8 +1,11 @@
 const express = require("express");
-const router = express.Router();
+const bcrypt = require("bcryptjs");
 const Officer = require("../models/Officer");
+const router = express.Router();
 
-// POST /api/register
+// -----------------------
+// OFFICER REGISTRATION (/api/register)
+// -----------------------
 router.post("/register", async (req, res) => {
   try {
     const {
@@ -14,13 +17,19 @@ router.post("/register", async (req, res) => {
       serviceNumber,
       state,
       lga,
-      passportUrl
+      email,
+      password,
+      passportUrl,
     } = req.body;
 
-    // Validate required fields
-    if (!surname || !firstname || !gender || !serviceNumber || !state || !lga || !passportUrl) {
-      return res.status(400).json({ message: "All required fields must be filled." });
+    if (!surname || !firstname || !gender || !serviceNumber || !state || !lga || !email || !password || !passportUrl) {
+      return res.status(400).json({ message: "All fields are required including passport URL." });
     }
+
+    const existingOfficer = await Officer.findOne({ email });
+    if (existingOfficer) return res.status(409).json({ message: "Email already registered" });
+
+    const hashedPassword = await bcrypt.hash(password, 10);
 
     const newOfficer = new Officer({
       surname,
@@ -31,13 +40,15 @@ router.post("/register", async (req, res) => {
       serviceNumber,
       state,
       lga,
-      passportUrl
+      passportUrl,
+      email,
+      password: hashedPassword,
     });
 
-    const savedOfficer = await newOfficer.save();
-    res.status(201).json({ message: "Officer saved successfully", data: savedOfficer });
+    await newOfficer.save();
+    res.status(201).json({ message: "Officer registered successfully" });
   } catch (err) {
-    console.error("Error saving officer:", err);
+    console.error("Officer registration error:", err);
     res.status(500).json({ message: "Server error" });
   }
 });

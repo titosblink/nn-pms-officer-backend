@@ -22,7 +22,7 @@ router.post("/signup", async (req, res) => {
       name,
       email,
       password: hashedPassword,
-      status: 1, // always set status = 1
+      status: 1, // default status
     });
 
     res.status(201).json({
@@ -73,9 +73,8 @@ router.post("/login", async (req, res) => {
 // LOGOUT (/auth/logout)
 // ----------------------
 router.post("/logout", (req, res) => {
-  req.session.destroy((err) => {
-    if (err) return res.status(500).json({ message: "Logout failed" });
-    res.clearCookie("nn_pms_session"); // Make sure cookie name matches session
+  req.session.destroy(() => {
+    res.clearCookie("nn_pms_session");
     res.json({ message: "Logged out successfully" });
   });
 });
