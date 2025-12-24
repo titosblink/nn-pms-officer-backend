@@ -1,8 +1,9 @@
-// server.js (relevant part)
 require("dotenv").config();
 const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
+const session = require("express-session");
+const MongoStore = require("connect-mongo");
 const bcrypt = require("bcryptjs");
 
 // Models
@@ -13,7 +14,23 @@ const app = express();
 
 // Middleware
 app.use(cors({ origin: "*", credentials: true }));
-app.use(express.json()); // parse JSON bodies
+app.use(express.json());
+
+// Session setup
+app.use(
+  session({
+    name: "nn_pms_session",
+    secret: process.env.SESSION_SECRET || "secret_key",
+    resave: false,
+    saveUninitialized: false,
+    store: MongoStore.create({ mongoUrl: process.env.MONGO_URI }),
+    cookie: {
+      maxAge: 1000 * 60 * 60 * 24, // 1 day
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+    },
+  })
+);
 
 // MongoDB connection
 mongoose
@@ -22,7 +39,7 @@ mongoose
   .catch((err) => console.error("MongoDB connection error:", err));
 
 // -----------------------
-// Officer registration route
+// Officer registration
 // -----------------------
 app.post("/api/register", async (req, res) => {
   try {
@@ -37,22 +54,18 @@ app.post("/api/register", async (req, res) => {
       lga,
       email,
       password,
-      passportUrl, // frontend sends this
+      passportUrl,
     } = req.body;
 
-    // Validate required fields
     if (!surname || !firstname || !gender || !serviceNumber || !state || !lga || !email || !password || !passportUrl) {
       return res.status(400).json({ message: "All fields are required including passport URL." });
     }
 
-    // Check if email already exists
     const existingOfficer = await Officer.findOne({ email });
     if (existingOfficer) return res.status(409).json({ message: "Email already registered" });
 
-    // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Create officer
     const newOfficer = new Officer({
       surname,
       firstname,
@@ -75,7 +88,45 @@ app.post("/api/register", async (req, res) => {
   }
 });
 
+// -----------------------
+// Login route
+// -----------------------
+app.post("/auth/login", async (req, res) => {
+  const { email, password } = req.body;
+  try {
+    const officer = await Officer.findOne({ email });
+    if (!officer) return res.status(400).json({ message: "Invalid email or password" });
+
+    const isMatch = await bcrypt.compare(password, officer.password);
+    if (!isMatch) return res.status(400).json({ message: "Invalid email or password" });
+
+    req.session.officer = { id: officer._id, email: officer.email, name: officer.firstname };
+
+    res.json({ token: "session-based-auth", user: req.session.officer });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// -----------------------
+// Auth routes
+// -----------------------
+app.get("/auth/me", (req, res) => {
+  if (!req.session.officer) return res.status(401).json({ message: "Not authenticated" });
+  res.json(req.session.officer);
+});
+
+app.post("/auth/logout", (req, res) => {
+  req.session.destroy(() => {
+    res.clearCookie("nn_pms_session");
+    res.json({ message: "Logged out successfully" });
+  });
+});
+
+// -----------------------
 // Test route
+// -----------------------
 app.get("/", (req, res) => res.send("Root API is running!"));
 
 // Start server
