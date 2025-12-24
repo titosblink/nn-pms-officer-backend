@@ -1,17 +1,16 @@
 const express = require("express");
 const bcrypt = require("bcryptjs");
-const jwt = require("jsonwebtoken");
 const User = require("../models/User");
 const router = express.Router();
 
-
 // ----------------------
-// SIGNUP
+// USER SIGNUP (/api/signup)
 // ----------------------
 router.post("/signup", async (req, res) => {
   try {
-    const { name, email, password, status } = req.body;
-    if (!name || !email || !password || !status)
+    const { name, email, password } = req.body;
+
+    if (!name || !email || !password)
       return res.status(400).json({ message: "All fields are required" });
 
     const existingUser = await User.findOne({ email });
@@ -19,38 +18,40 @@ router.post("/signup", async (req, res) => {
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    const newUser = await User.create({ name, email, password: hashedPassword, status });
-    res.status(201).json({ message: "User created successfully", user: { id: newUser._id, name, email, status } });
+    const newUser = await User.create({
+      name,
+      email,
+      password: hashedPassword,
+      status: 1, // always set status = 1
+    });
+
+    res.status(201).json({
+      message: "User created successfully",
+      user: { id: newUser._id, name, email, status: 1 },
+    });
   } catch (err) {
     console.error("Signup error:", err);
     res.status(500).json({ message: "Server error" });
   }
 });
 
-
-
-
-
 // ----------------------
-// LOGIN
+// LOGIN (/auth/login)
 // ----------------------
 router.post("/login", async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    if (!email || !password) {
+    if (!email || !password)
       return res.status(400).json({ message: "Email and password are required" });
-    }
 
-    // Find user
     const user = await User.findOne({ email });
     if (!user) return res.status(400).json({ message: "Invalid credentials" });
 
-    // Check password
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) return res.status(400).json({ message: "Invalid credentials" });
 
-    // Save user session
+    // Save session
     req.session.user = {
       id: user._id,
       name: user.name,
@@ -69,7 +70,7 @@ router.post("/login", async (req, res) => {
 });
 
 // ----------------------
-// LOGOUT
+// LOGOUT (/auth/logout)
 // ----------------------
 router.post("/logout", (req, res) => {
   req.session.destroy((err) => {
@@ -80,7 +81,7 @@ router.post("/logout", (req, res) => {
 });
 
 // ----------------------
-// CHECK SESSION
+// CHECK SESSION (/auth/me)
 // ----------------------
 router.get("/me", (req, res) => {
   if (!req.session.user) return res.status(401).json({ message: "Not authenticated" });

@@ -8,11 +8,14 @@ const bcrypt = require("bcryptjs");
 
 // Models
 const Officer = require("./models/Officer");
+const User = require("./models/User"); // Make sure you have a User model
 
 // Initialize app
 const app = express();
 
+// -----------------------
 // Middleware
+// -----------------------
 app.use(cors({ origin: "*", credentials: true }));
 app.use(express.json());
 
@@ -34,15 +37,21 @@ app.use(
   })
 );
 
-
+// -----------------------
 // MongoDB connection
+// -----------------------
 mongoose
-  .connect(process.env.MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true })
+  .connect(process.env.MONGO_URI)
   .then(() => console.log("MongoDB connected"))
   .catch((err) => console.error("MongoDB connection error:", err));
 
 // -----------------------
-// Officer registration
+// Root route
+// -----------------------
+app.get("/", (req, res) => res.send("Root API is running!"));
+
+// -----------------------
+// Officer Registration
 // -----------------------
 app.post("/api/register", async (req, res) => {
   try {
@@ -83,10 +92,38 @@ app.post("/api/register", async (req, res) => {
       password: hashedPassword,
     });
 
-    const savedOfficer = await newOfficer.save();
-    res.status(201).json({ message: "Officer registered successfully", data: savedOfficer });
+    await newOfficer.save();
+    res.status(201).json({ message: "Officer registered successfully" });
   } catch (err) {
     console.error("Officer registration error:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// -----------------------
+// Simple User Signup (/api/signup)
+// -----------------------
+app.post("/api/signup", async (req, res) => {
+  try {
+    const { name, email, password } = req.body;
+
+    if (!name || !email || !password) return res.status(400).json({ message: "All fields are required" });
+
+    const existingUser = await User.findOne({ email });
+    if (existingUser) return res.status(409).json({ message: "Email already taken" });
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    const newUser = await User.create({
+      name,
+      email,
+      password: hashedPassword,
+      status: 1, // default status = 1
+    });
+
+    res.status(201).json({ message: "User created successfully", user: { id: newUser._id, name, email, status: 1 } });
+  } catch (err) {
+    console.error("Signup error:", err);
     res.status(500).json({ message: "Server error" });
   }
 });
@@ -95,19 +132,29 @@ app.post("/api/register", async (req, res) => {
 // Login route
 // -----------------------
 app.post("/auth/login", async (req, res) => {
-  const { email, password } = req.body;
   try {
-    const officer = await Officer.findOne({ email });
-    if (!officer) return res.status(400).json({ message: "Invalid email or password" });
+    const { email, password } = req.body;
 
-    const isMatch = await bcrypt.compare(password, officer.password);
+    if (!email || !password) return res.status(400).json({ message: "Email and password are required" });
+
+    // Check in Users table
+    const user = await User.findOne({ email });
+    if (!user) return res.status(400).json({ message: "Invalid email or password" });
+
+    const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) return res.status(400).json({ message: "Invalid email or password" });
 
-    req.session.officer = { id: officer._id, email: officer.email, name: officer.firstname };
+    // Save session
+    req.session.user = {
+      id: user._id,
+      name: user.name,
+      email: user.email,
+      status: user.status,
+    };
 
-    res.json({ token: "session-based-auth", user: req.session.officer });
+    res.json({ message: "Login successful", user: req.session.user });
   } catch (err) {
-    console.error(err);
+    console.error("Login error:", err);
     res.status(500).json({ message: "Server error" });
   }
 });
@@ -116,8 +163,8 @@ app.post("/auth/login", async (req, res) => {
 // Auth routes
 // -----------------------
 app.get("/auth/me", (req, res) => {
-  if (!req.session.officer) return res.status(401).json({ message: "Not authenticated" });
-  res.json(req.session.officer);
+  if (!req.session.user) return res.status(401).json({ message: "Not authenticated" });
+  res.json(req.session.user);
 });
 
 app.post("/auth/logout", (req, res) => {
@@ -128,10 +175,7 @@ app.post("/auth/logout", (req, res) => {
 });
 
 // -----------------------
-// Test route
-// -----------------------
-app.get("/", (req, res) => res.send("Root API is running!"));
-
 // Start server
+// -----------------------
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
