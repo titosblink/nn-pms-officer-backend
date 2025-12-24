@@ -17,12 +17,13 @@ const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
 
 const authRouter = require("./routes/auth"); // path to this file
-app.use("/auth", authRouter);
+
 
 // -----------------------
 // App initialization
 // -----------------------
 const app = express();
+app.use("/auth", authRouter);
 
 // -----------------------
 // Middleware
