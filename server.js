@@ -1,3 +1,7 @@
+// -----------------------
+// server.js
+// -----------------------
+
 const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
@@ -65,7 +69,7 @@ const officerSchema = new mongoose.Schema(
     lga: { type: String, required: true },
     passportUrl: { type: String, required: true },
     email: { type: String, unique: true, required: true },
-    password: { type: String, required: true },
+    password: { type: String, required: true }, // hashed
   },
   { timestamps: true }
 );
@@ -84,7 +88,9 @@ app.get("/", (req, res) => {
 // Ping route
 app.get("/ping", (req, res) => res.send("pong"));
 
+// -----------------------
 // Officer Registration
+// -----------------------
 app.post("/api/register", upload.single("passport"), async (req, res) => {
   try {
     const { surname, firstname, gender, serviceNumber, state, lga, email, password } = req.body;
@@ -117,7 +123,9 @@ app.post("/api/register", upload.single("passport"), async (req, res) => {
   }
 });
 
+// -----------------------
 // Officer Login
+// -----------------------
 app.post("/auth/login", async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -141,11 +149,11 @@ app.post("/auth/login", async (req, res) => {
 // -----------------------
 // Serve React frontend
 // -----------------------
-const clientBuildPath = path.join(__dirname, "build"); // Adjust if your frontend folder is different
+const clientBuildPath = path.join(__dirname, "build"); // Adjust if your React build is elsewhere
 app.use(express.static(clientBuildPath));
 
-// Correct catch-all route for React (after all API routes)
-app.get("/*", (req, res) => {
+// Catch-all route (after all API routes)
+app.get("*", (req, res) => {
   res.sendFile(path.join(clientBuildPath, "index.html"));
 });
 
