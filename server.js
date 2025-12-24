@@ -14,6 +14,9 @@ const { CloudinaryStorage } = require("multer-storage-cloudinary");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
 
+const authRouter = require("./routes/auth"); // path to this file
+app.use("/auth", authRouter);
+
 // -----------------------
 // App initialization
 // -----------------------
