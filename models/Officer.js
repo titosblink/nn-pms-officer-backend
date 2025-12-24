@@ -1,18 +1,23 @@
 const mongoose = require("mongoose");
 
-const userSchema = new mongoose.Schema({
+const officerSchema = new mongoose.Schema({
   surname: { type: String, required: true, trim: true },
   firstname: { type: String, required: true, trim: true },
-  othername: { type: String, required: true, trim: true },
+  othername: { type: String, trim: true },
+  gender: { type: String, required: true },
+  religion: { type: String, trim: true },
+  serviceNumber: { type: String, required: true },
+  state: { type: String, required: true },
+  lga: { type: String, required: true },
+  passportUrl: { type: String, required: true },
   email: {
     type: String,
     required: true,
     unique: true,
     lowercase: true,
-    match: [/^\S+@\S+\.\S+$/, "Invalid email format"]
+    match: [/^\S+@\S+\.\S+$/, "Invalid email format"],
   },
   password: { type: String, required: true, minlength: 6 },
-  status: { type: Number, enum: [1, 2, 3], required: true }
-});
+}, { timestamps: true });
 
-module.exports = mongoose.model("User", userSchema);
+module.exports = mongoose.models.Officer || mongoose.model("Officer", officerSchema);

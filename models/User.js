@@ -7,13 +7,10 @@ const userSchema = new mongoose.Schema({
     required: true,
     unique: true,
     lowercase: true,
-    match: [/^\S+@\S+\.\S+$/, "Invalid email format"]
+    match: [/^\S+@\S+\.\S+$/, "Invalid email format"],
   },
   password: { type: String, required: true, minlength: 6 },
-  status: { type: Number, enum: [1, 2, 3], required: true }
+  status: { type: Number, enum: [1, 2, 3], required: true },
 });
 
-module.exports = mongoose.model("User", userSchema);
-
-
-
+module.exports = mongoose.models.User || mongoose.model("User", userSchema);
