@@ -164,13 +164,7 @@ app.post("/auth/signup", async (req, res) => {
 
     // Create new user
     const newUser = new Officer({
-      surname: name,  // Or create a separate 'name' field if you prefer
-      firstname: "",
-      gender: "",
-      serviceNumber: "",
-      state: "",
-      lga: "",
-      passportUrl: "",
+      name,  // Or create a separate 'name' field if you prefer
       email,
       password: hashedPassword,
       status,
