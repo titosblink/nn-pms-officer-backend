@@ -2,33 +2,37 @@
 // server.js
 // -----------------------
 
+require("dotenv").config();
 const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
 const path = require("path");
-require("dotenv").config();
-const User = require("./models/User"); // adjust path as needed
-
-
+const bcrypt = require("bcryptjs");
+const jwt = require("jsonwebtoken");
 const multer = require("multer");
 const cloudinary = require("cloudinary").v2;
 const { CloudinaryStorage } = require("multer-storage-cloudinary");
-const jwt = require("jsonwebtoken");
-const bcrypt = require("bcryptjs");
 
-const authRouter = require("./routes/auth"); // path to this file
+// -----------------------
+// Models
+// -----------------------
+const User = require("./models/User"); // For /auth/signup
+const Officer = require("./models/Officer"); // For /api/register (if separate file)
 
+// -----------------------
+// Routes
+// -----------------------
+const authRouter = require("./routes/auth"); // Handles login/signup for User
 
 // -----------------------
 // App initialization
 // -----------------------
 const app = express();
-app.use("/auth", authRouter);
 
 // -----------------------
 // Middleware
 // -----------------------
-app.use(express.json());
+app.use(express.json()); // Must be before routes
 app.use(cors({ origin: "*", credentials: true }));
 
 // -----------------------
@@ -61,58 +65,42 @@ const storage = new CloudinaryStorage({
 const upload = multer({ storage });
 
 // -----------------------
-// Officer Model
-// -----------------------
-const officerSchema = new mongoose.Schema(
-  {
-    surname: { type: String, required: true },
-    firstname: { type: String, required: true },
-    othername: String,
-    gender: { type: String, required: true },
-    religion: String,
-    serviceNumber: { type: String, required: true },
-    state: { type: String, required: true },
-    lga: { type: String, required: true },
-    passportUrl: { type: String, required: true },
-    email: { type: String, unique: true, required: true },
-    password: { type: String, required: true }, // hashed
-  },
-  { timestamps: true }
-);
-
-const Officer = mongoose.model("Officer", officerSchema);
-
-// -----------------------
 // Routes
 // -----------------------
 
-// Test root
-app.get("/", (req, res) => {
-  res.send("Root API is running!");
-});
+// Mount auth router first (User login/signup)
+app.use("/auth", authRouter);
 
-// Ping route
+// Root test route
+app.get("/", (req, res) => res.send("Root API is running!"));
 app.get("/ping", (req, res) => res.send("pong"));
 
 // -----------------------
-// Officer Registration
+// Officer Registration Route
 // -----------------------
 app.post("/api/register", upload.single("passport"), async (req, res) => {
   try {
     const { surname, firstname, gender, serviceNumber, state, lga, email, password } = req.body;
 
+    // Check required fields
     if (!surname || !firstname || !gender || !serviceNumber || !state || !lga || !req.file || !email || !password) {
       return res.status(400).json({ message: "Please fill all required fields." });
     }
 
+    // Check if officer email already exists
+    const existingOfficer = await Officer.findOne({ email });
+    if (existingOfficer) return res.status(409).json({ message: "Email already registered" });
+
+    // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
+    // Create Officer
     const newOfficer = new Officer({
       surname,
       firstname,
-      othername: req.body.othername,
+      othername: req.body.othername || "",
       gender,
-      religion: req.body.religion,
+      religion: req.body.religion || "",
       serviceNumber,
       state,
       lga,
@@ -124,72 +112,19 @@ app.post("/api/register", upload.single("passport"), async (req, res) => {
     const savedOfficer = await newOfficer.save();
     res.status(201).json({ message: "Officer registered successfully", data: savedOfficer });
   } catch (err) {
-    console.error("Registration error:", err);
+    console.error("Officer registration error:", err);
     res.status(500).json({ message: "Server error" });
   }
 });
-
-// -----------------------
-// Officer Login
-// -----------------------
-app.post("/auth/login", async (req, res) => {
-  try {
-    const { email, password } = req.body;
-
-    if (!email || !password) return res.status(400).json({ message: "Email and password required" });
-
-    const officer = await Officer.findOne({ email });
-    if (!officer) return res.status(404).json({ message: "Officer not found" });
-
-    const isMatch = await bcrypt.compare(password, officer.password);
-    if (!isMatch) return res.status(401).json({ message: "Invalid password" });
-
-    const token = jwt.sign({ id: officer._id }, process.env.JWT_SECRET, { expiresIn: "7d" });
-    res.json({ message: "Login successful", token, user: officer });
-  } catch (err) {
-    console.error("Login error:", err);
-    res.status(500).json({ message: "Server error" });
-  }
-});
-
-app.post("/auth/signup", async (req, res) => {
-  try {
-    const { name, email, password, status } = req.body;
-
-    if (!name || !email || !password || !status) {
-      return res.status(400).json({ message: "All fields are required" });
-    }
-
-    const existingUser = await User.findOne({ email });
-    if (existingUser) return res.status(409).json({ message: "Email already taken" });
-
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    const newUser = new User({
-      name,
-      email,
-      password: hashedPassword,
-      status
-    });
-
-    const savedUser = await newUser.save();
-    res.status(201).json({ message: "Signup successful", data: savedUser });
-  } catch (err) {
-    console.error("Signup error:", err);
-    res.status(500).json({ message: "Server error" });
-  }
-});
-
 
 // -----------------------
 // Serve React frontend
 // -----------------------
-const clientBuildPath = path.join(__dirname, "build"); // Adjust if your React build is elsewhere
+const clientBuildPath = path.join(__dirname, "build"); // adjust if your React build is elsewhere
 app.use(express.static(clientBuildPath));
 
-// Catch-all route (after all API routes)
-
-app.get(/.*/, (req,res) => {
+// Catch-all route
+app.get(/.*/, (req, res) => {
   res.sendFile(path.join(clientBuildPath, "index.html"));
 });
 
