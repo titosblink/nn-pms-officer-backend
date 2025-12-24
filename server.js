@@ -7,6 +7,8 @@ const mongoose = require("mongoose");
 const cors = require("cors");
 const path = require("path");
 require("dotenv").config();
+const User = require("./models/User"); // adjust path as needed
+
 
 const multer = require("multer");
 const cloudinary = require("cloudinary").v2;
