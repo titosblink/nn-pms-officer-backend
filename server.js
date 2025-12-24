@@ -146,6 +146,44 @@ app.post("/auth/login", async (req, res) => {
   }
 });
 
+app.post("/auth/signup", async (req, res) => {
+  try {
+    const { name, email, password, status } = req.body;
+
+    // Validate required fields
+    if (!name || !email || !password || !status) {
+      return res.status(400).json({ message: "All fields are required" });
+    }
+
+    // Check if user already exists
+    const existingUser = await Officer.findOne({ email });
+    if (existingUser) return res.status(409).json({ message: "Email already taken" });
+
+    // Hash password
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // Create new user
+    const newUser = new Officer({
+      surname: name,  // Or create a separate 'name' field if you prefer
+      firstname: "",
+      gender: "",
+      serviceNumber: "",
+      state: "",
+      lga: "",
+      passportUrl: "",
+      email,
+      password: hashedPassword,
+      status,
+    });
+
+    const savedUser = await newUser.save();
+    res.status(201).json({ message: "Signup successful", data: savedUser });
+  } catch (err) {
+    console.error("Signup error:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
 // -----------------------
 // Serve React frontend
 // -----------------------
