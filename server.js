@@ -11,7 +11,7 @@ const bcrypt = require("bcryptjs");
 // Models
 const Officer = require("./models/Officer");
 
-// Routes
+// Routes (if you have separate routes)
 const authRouter = require("./routes/auth");
 const officerRoutes = require("./routes/officers");
 
@@ -21,22 +21,27 @@ const app = express();
 // Middleware
 app.use(cors({ origin: "*", credentials: true }));
 app.use(express.json());
-app.use("/uploads", express.static(path.join(__dirname, "uploads"))); // serve uploaded files
 
+// -----------------------
 // MongoDB connection
+// -----------------------
 mongoose
   .connect(process.env.MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true })
   .then(() => console.log("MongoDB connected"))
   .catch((err) => console.error("MongoDB connection error:", err));
 
+// -----------------------
 // Cloudinary configuration
+// -----------------------
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
   api_key: process.env.CLOUDINARY_API_KEY,
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
+// -----------------------
 // Multer + Cloudinary storage
+// -----------------------
 const storage = new CloudinaryStorage({
   cloudinary,
   params: {
@@ -56,7 +61,7 @@ app.use("/auth", authRouter);
 // Officer routes
 app.use("/api", officerRoutes);
 
-// Officer registration (example route)
+// Officer registration route
 app.post("/api/register", upload.single("passport"), async (req, res) => {
   try {
     const { surname, firstname, othername, gender, religion, serviceNumber, state, lga, email, password } = req.body;
@@ -73,13 +78,13 @@ app.post("/api/register", upload.single("passport"), async (req, res) => {
     const newOfficer = new Officer({
       surname,
       firstname,
-      othername,
+      othername: othername || "",
       gender,
-      religion,
+      religion: religion || "",
       serviceNumber,
       state,
       lga,
-      passportUrl: req.file.path,
+      passportUrl: req.file.path, // Cloudinary URL
       email,
       password: hashedPassword,
     });
