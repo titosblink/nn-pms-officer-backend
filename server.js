@@ -7,10 +7,12 @@ const MongoStore = require("connect-mongo");
 
 // Routers
 const authRouter = require("./routes/auth");
-const officerRouter = require("./routes/officer");
+const officerRouter = require("./routes/officers");
+
 
 const app = express();
 
+app.use("/api", officerRouter);
 // -----------------------
 // Middleware
 // -----------------------
