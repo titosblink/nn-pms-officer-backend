@@ -1,23 +1,15 @@
 const mongoose = require("mongoose");
 
 const officerSchema = new mongoose.Schema({
-  surname: { type: String, required: true, trim: true },
-  firstname: { type: String, required: true, trim: true },
-  othername: { type: String, trim: true },
+  surname: { type: String, required: true },
+  firstname: { type: String, required: true },
+  othername: { type: String },
   gender: { type: String, required: true },
-  religion: { type: String, trim: true },
+  religion: { type: String },
   serviceNumber: { type: String, required: true },
   state: { type: String, required: true },
   lga: { type: String, required: true },
-  passportUrl: { type: String, required: true },
-  email: {
-    type: String,
-    required: true,
-    unique: true,
-    lowercase: true,
-    match: [/^\S+@\S+\.\S+$/, "Invalid email format"],
-  },
-  password: { type: String, required: true, minlength: 6 },
+  passportUrl: { type: String, required: true }, // Store Cloudinary URL
 }, { timestamps: true });
 
-module.exports = mongoose.models.Officer || mongoose.model("Officer", officerSchema);
+module.exports = mongoose.model("Officer", officerSchema);
