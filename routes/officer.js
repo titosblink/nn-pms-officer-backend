@@ -17,19 +17,15 @@ router.post("/register", async (req, res) => {
       serviceNumber,
       state,
       lga,
-      email,
-      password,
       passportUrl,
     } = req.body;
 
-    if (!surname || !firstname || !gender || !serviceNumber || !state || !lga || !email || !password || !passportUrl) {
+    if (!surname || !firstname || !gender || !serviceNumber || !state || !lga || !passportUrl) {
       return res.status(400).json({ message: "All fields are required including passport URL." });
     }
 
-    const existingOfficer = await Officer.findOne({ email });
+    const existingOfficer = await Officer.findOne({ serviceNumber });
     if (existingOfficer) return res.status(409).json({ message: "Email already registered" });
-
-    const hashedPassword = await bcrypt.hash(password, 10);
 
     const newOfficer = new Officer({
       surname,
@@ -41,8 +37,6 @@ router.post("/register", async (req, res) => {
       state,
       lga,
       passportUrl,
-      email,
-      password: hashedPassword,
     });
 
     await newOfficer.save();
