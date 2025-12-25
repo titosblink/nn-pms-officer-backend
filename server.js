@@ -4,18 +4,11 @@ const mongoose = require("mongoose");
 const cors = require("cors");
 const session = require("express-session");
 const MongoStore = require("connect-mongo");
-
 const authRouter = require("./routes/auth");
 const officerRouter = require("./routes/officer");
 
 const app = express();
 
-// 1. MUST BE FIRST: CORS configuration
-// Note: When credentials is true, origin cannot be "*"
-app.use(cors({ 
-  origin: ["https://nn-pms-officer-frontend-h5il.vercel.app", "https://nn-pms-officer-frontend-h5il.vercel.app/"], // Add your deployed frontend URL here later
-  credentials: true 
-}));
 
 // 2. MUST BE BEFORE ROUTES: Body Parser
 app.use(express.json());
@@ -39,6 +32,14 @@ app.use(
     },
   })
 );
+
+// 1. MUST BE FIRST: CORS configuration
+// Note: When credentials is true, origin cannot be "*"
+app.use(cors({
+  origin: "https://nn-pms-officer-frontend-h5il.vercel.app", // Change this to your actual frontend URL
+  credentials: true
+}));
+
 
 // 4. ROUTES (Moved below middleware)
 app.use("/auth", authRouter);
