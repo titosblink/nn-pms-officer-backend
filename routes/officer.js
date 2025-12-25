@@ -25,7 +25,7 @@ router.post("/register", async (req, res) => {
     }
 
     const existingOfficer = await Officer.findOne({ serviceNumber });
-    if (existingOfficer) return res.status(409).json({ message: "Email already registered" });
+    if (existingOfficer) return res.status(409).json({ message: "Service Number already registered" });
 
     const newOfficer = new Officer({
       surname,
